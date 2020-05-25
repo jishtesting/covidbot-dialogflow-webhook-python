@@ -14,10 +14,12 @@ state_helpline = {"Andhra Pradesh": "0866-2410978","Arunachal Pradesh": "9436055
 dict = {}
 state = {}
 counter = 0
+list = []
 def sensor():
     global state, dict
     global counter
     global state_helpline
+    global list
     """ Function for test purposes. """
     print("Scheduler is alive!")
     counter = counter + 1
@@ -55,13 +57,23 @@ def sensor():
             state.update(state_data)
         print(dict["state"] + " Total " + str(total))
         print(state)
+        list.append(int(state_data.get(dict["state"])))
+        print(list)
+        print(state_data.get(dict["state"]))
+        print(state)
         total = 0
+    print(type(list[1]))
+    print("888888888888888888888888888888888888888888888888")
+    indiancount = sum(list)
+    list = []
+    print(sum(list))
+
 
     sched = BackgroundScheduler(daemon=True)
-    sched.add_job(sensor,'interval',minutes=60)
+    sched.add_job(sensor,'interval',minutes=15)
     sched.start()
 
-    return dict, state, jsondata_helpline
+    return dict, state, jsondata_helpline, indiancount
 
 
 app = Flask(__name__)
@@ -85,7 +97,7 @@ def webhook():
 
 def process_request(req):
     global dict, state
-
+    global indiancount
 
 
     try:
@@ -99,7 +111,7 @@ def process_request(req):
             print("Webhook Successfully connected.")
 
         elif action == "district":
-            dict, state,jsondata_helpline = sensor()
+            dict, state,jsondata_helpline, indiancount = sensor()
             district_name = req.get("queryResult").get("parameters").get("districtname")
             print(district_name)
             if district_name in dict:
@@ -157,7 +169,7 @@ def process_request(req):
 
 
         elif action == "state":
-            dict, state, jsondata_helpline = sensor()
+            dict, state, jsondata_helpline, indiancount = sensor()
             statename = req.get("queryResult").get("parameters").get("statename")
             print(statename)
             if statename in state:
@@ -217,11 +229,47 @@ def process_request(req):
                 }
             return message
 
+
+        elif action == "india":
+            dict, state, jsondata_helpline, indiancount = sensor()
+            print(indiancount)
+            return {
+                "source": "webhook",
+                "fulfillmentMessages": [
+                    {
+                        "text": {
+                            "text": [
+                                "In india there are around " +str(indiancount)+ " cases"
+                            ]
+                        },
+                        "platform": "TELEGRAM"
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "#StaySafe  #StayHome"
+                            ]
+                        },
+                        "platform": "TELEGRAM"
+                    },
+                    {
+                        "quickReplies": {
+                            "title": "What would you like to do next?",
+                            "quickReplies": [
+                                "Covid Goverment Helpline",
+                                "Covid helpful links"
+                            ]
+                        },
+                        "platform": "TELEGRAM",
+                    }
+                ]
+            }
+
         elif action == "helpline":
             statename = req.get("queryResult").get("parameters").get("statename")
             print(statename)
             districtname = req.get("queryResult").get("parameters").get("districtname")
-            dict, state, jsondata_helpline = sensor()
+            dict, state, jsondata_helpline, indiancount = sensor()
             if statename :
                 statename.capitalize()
 
