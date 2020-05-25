@@ -63,7 +63,7 @@ def sensor():
         print(state)
         total = 0
     print(type(list[1]))
-    print("888888888888888888888888888888888888888888888888")
+    print("888888888888888888888888888888888888888")
     indiancount = sum(list)
     list = []
     print(sum(list))
