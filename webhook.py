@@ -70,7 +70,7 @@ def sensor():
 
 
     sched = BackgroundScheduler(daemon=True)
-    sched.add_job(sensor,'interval',minutes=15)
+    sched.add_job(sensor,'interval',minutes=120)
     sched.start()
 
     return dict, state, jsondata_helpline, indiancount
