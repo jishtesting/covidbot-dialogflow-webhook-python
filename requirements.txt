@@ -1,0 +1,4 @@
+Flask==1.1.1
+APScheduler==3.6.3
+requests==2.23.0
+traceback2==1.4.0
