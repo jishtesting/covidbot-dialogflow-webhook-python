@@ -407,40 +407,61 @@ def process_request(req):
                 }
 
             elif districtname :
+                print(districtname)
                 print("true")
+                n = []
+                # raw_data_helpline = requests.get("https://api.covid19india.org/resources/resources.json")
+                # jsondata_helpline = raw_data_helpline.json()
+                # districtname = "Kollam"
                 for i in jsondata_helpline["resources"]:
                     if districtname in i["city"]:
-                        print(districtname)
-                        return {
+                        n.append(i)
+                        message = {
                             "source": "webhook",
                             "fulfillmentMessages": [
-                               {
-                                   "card": {
-                                       "title": i["category"],
-                                       "subtitle": i["city"] + " | " + "Phone: " + " | " + str(i["phonenumber"]),
-                                       "imageUri": "https://static.vecteezy.com/system/resources/previews/001/059/969/non_2x/people-fighting-covid-19-corona-virus-vector.jpg",
-                                       "buttons": [
-                                           {
-                                               "text": "Profile",
-                                               "postback": i["contact"]
-                                           }
-                                       ]
-                                   },
-                                   "platform": "TELEGRAM"
-                               },
-                               {
-                                   "quickReplies": {
-                                       "title": "What would you like to do next?",
-                                       "quickReplies": [
-                                           "Covid Goverment Helpline",
-                                           "Covid helpful links"
-                                       ]
-                                   },
-                                   "platform": "TELEGRAM",
-                               }
-                               ]
+                                                       {
+                                                           "card": {
+                                                               "title": i["city"],
+                                                               "subtitle": i["nameoftheorganisation"] + " | " + "Phone: " + " | " + str(i["phonenumber"]),
+                                                               "imageUri": "https://static.vecteezy.com/system/resources/previews/001/059/969/non_2x/people-fighting-covid-19-corona-virus-vector.jpg",
+                                                               "buttons": [
+                                                                   {
+                                                                       "text": "Profile",
+                                                                       "postback": i["contact"]
+                                                                   }
+                                                               ]
+                                                           }
+                                                       } for i in n] + [
+                                                       {
+                                                           "quickReplies": {
+                                                               "title": "Check Out",
+                                                               "quickReplies": [
+                                                                   "State Helpline",
+                                                                   "district Helpline ",
+                                                                   "Covid Count"
+                                                               ]
+                                                           }
+                                                       }
+                                                   ]
                         }
+                    # else:
+                    #     return {
+                    #         "source": "webhook",
+                    #         "fulfillmentMessages": [
+                    #             {
+                    #                 "quickReplies": {
+                    #                     "title": "Sorry I'm not able to find Details for your district ☹️, Please check your State Helpline Details",
+                    #                     "quickReplies": [
+                    #                         "State Helpline",
+                    #                         "disctrict Helpline ",
+                    #                         "Covid Count"
+                    #                     ]
+                    #                 }
+                    #             }
+                    #             ]
+                    #         }
 
+                return message
 
 
     except Exception as e:
