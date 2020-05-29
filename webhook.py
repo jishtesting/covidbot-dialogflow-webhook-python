@@ -19,10 +19,15 @@ state_helpline = {"Andhra Pradesh": "0866-2410978","Arunachal Pradesh": "9436055
 dict = {}
 state = {}
 counter = 0
+
 list_cnfirm = []
 list_active = []
 list_decreased =[]
 list_recovered = []
+
+daily_cnfirm = []
+daily_recovered = []
+daily_death = []
 def sensor():
     global state, dict
     global counter
@@ -41,10 +46,15 @@ def sensor():
     raw_data = requests.get("https://api.covid19india.org/zones.json")
     jsondata_zone = raw_data.json()
 
+    raw_data = requests.get("https://api.covid19india.org/v2/state_district_wise.json")
+    jsondata_daily = raw_data.json()
+
     total_cnfirm = 0
     total_active = 0
     total_recovered = 0
     total_decreased = 0
+
+
     for i in jsondata:
 
         dict.update(i)
@@ -110,7 +120,7 @@ def sensor():
     sched.add_job(sensor,'interval',minutes=120)
     sched.start()
 
-    return dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased
+    return dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased, jsondata_daily
 
 
 app = Flask(__name__)
@@ -147,8 +157,150 @@ def process_request(req):
         if action == "input.welcome":
             print("Webhook Successfully connected.")
 
+
+        elif action == "daily_dist":
+            district_name = req.get("queryResult").get("parameters").get("districtname")
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased,jsondata_daily = sensor()
+
+            for i in jsondata_daily:
+                for district_data in i.get("districtData"):
+                    if district_data.get("district") == district_name:
+                        daily = district_data.get("delta")
+                        print(daily.get("confirmed"))
+
+            message = {
+                "source": "webhook",
+                "fulfillmentMessages": [
+                    {
+                        "text": {
+                            "text": [
+                                "District = " + district_name
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "Recovered = " + str(daily.get("recovered"))
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "Confirmed  = " + str(daily.get("confirmed"))
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                " Decreased = " + str(daily.get("deceased"))
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "Daily cases are mostly updated in the end of the day"
+                            ]
+                        }
+                    },
+                    {
+                        "quickReplies": {
+                            "title": "What would you like to do next?",
+                            "quickReplies": [
+                                "Helpline details in  " + district_name,
+                                "about covid"
+                            ]
+                        }
+                    }
+                ],
+            }
+            return message
+
+        elif action == "daily_state":
+            statename = req.get("queryResult").get("parameters").get("statename")
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased,jsondata_daily = sensor()
+
+
+
+            for i in jsondata_daily:
+                if statename in i.get("state"):
+                    data = i.get("districtData")
+                    for j in data:
+                        print(j.get("delta"))
+                        delta = j.get("delta")
+                        confirm = delta.get("confirmed")
+                        recovered = delta.get("recovered")
+                        death = delta.get("deceased")
+                        daily_cnfirm.append(int(confirm))
+                        daily_recovered.append(int(recovered))
+                        daily_death.append(int(death))
+
+            dailyconfirm = sum(daily_cnfirm)
+            dailyrecovered = sum(daily_recovered)
+            dailydeath = sum(daily_death)
+
+            message = {
+                "source": "webhook",
+                "fulfillmentMessages": [
+                    {
+                        "text": {
+                            "text": [
+                                "State = " + statename
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "Recovered = " + str(dailyrecovered)
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "Confirmed  = " + str(dailyconfirm)
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                " Decreased = " + str(dailydeath)
+                            ]
+                        }
+                    },
+                    {
+                        "text": {
+                            "text": [
+                                "Daily cases are mostly updated in the end of the day"
+                            ]
+                        }
+                    },
+                    {
+                        "quickReplies": {
+                            "title": "What would you like to do next?",
+                            "quickReplies": [
+                                "Helpline details in  " + statename,
+                                "about covid"
+                            ]
+                        }
+                    }
+                ],
+            }
+
+            return message
+
+
+
+
+
+
         elif action == "district":
-            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased = sensor()
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased,jsondata_daily = sensor()
             district_name = req.get("queryResult").get("parameters").get("districtname")
             print(district_name)
             if district_name in dict:
@@ -204,7 +356,7 @@ def process_request(req):
                 }
             return message
         elif action == "zone":
-            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased = sensor()
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased,jsondata_daily = sensor()
             districtname = req.get("queryResult").get("parameters").get("districtname")
             print(districtname)
 
@@ -266,7 +418,7 @@ def process_request(req):
 
 
         elif action == "state":
-            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased = sensor()
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased, jsondata_daily = sensor()
             statename = req.get("queryResult").get("parameters").get("statename")
             print(statename)
             if statename in state:
@@ -330,7 +482,7 @@ def process_request(req):
 
 
         elif action == "india":
-            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased = sensor()
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased,jsondata_daily = sensor()
             # print(indiancount)
             return {
                 "source": "webhook",
@@ -368,7 +520,7 @@ def process_request(req):
             statename = req.get("queryResult").get("parameters").get("statename")
             print(statename)
             districtname = req.get("queryResult").get("parameters").get("districtname")
-            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased = sensor()
+            dict, state, jsondata_helpline, jsondata_zone, indian_confirm, indian_active, indian_recovered, indian_decreased,jsondata_daily = sensor()
             if statename :
                 statename.capitalize()
 
@@ -444,22 +596,6 @@ def process_request(req):
                                                        }
                                                    ]
                         }
-                    # else:
-                    #     return {
-                    #         "source": "webhook",
-                    #         "fulfillmentMessages": [
-                    #             {
-                    #                 "quickReplies": {
-                    #                     "title": "Sorry I'm not able to find Details for your district ☹️, Please check your State Helpline Details",
-                    #                     "quickReplies": [
-                    #                         "State Helpline",
-                    #                         "disctrict Helpline ",
-                    #                         "Covid Count"
-                    #                     ]
-                    #                 }
-                    #             }
-                    #             ]
-                    #         }
 
                 return message
 
